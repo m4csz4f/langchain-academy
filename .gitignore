@@ -1,6 +1,7 @@
 .ipynb_checkpoints/
 
 .idea/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -219,3 +220,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 module-6/deployment/docker-compose.yml
+.python-version
+.langgraph_api/

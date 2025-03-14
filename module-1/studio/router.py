@@ -1,7 +1,30 @@
-from langchain_openai import ChatOpenAI
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode, tools_condition
+import os
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from langchain_openai import AzureChatOpenAI
+from dotenv import load_dotenv
+load_dotenv()
+
+credential = DefaultAzureCredential()
+scope = "https://cognitiveservices.azure.com/.default"
+token_provider = get_bearer_token_provider(credential, scope)
+
+llm =AzureChatOpenAI(
+        azure_endpoint=os.getenv("AZURE_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_DEPLOYMENT"),
+        api_version=os.getenv("API_VERSION"),
+        azure_ad_token_provider=token_provider,
+        openai_api_type=os.getenv("OPENAI_API_TYPE"),
+        model=os.getenv("MODEL"),
+        temperature=0.0,
+        streaming=False,
+        callbacks=[],
+        verbose=False,
+        timeout=120,
+    )
+
 
 # Tool
 def multiply(a: int, b: int) -> int:
@@ -14,7 +37,6 @@ def multiply(a: int, b: int) -> int:
     return a * b
 
 # LLM with bound tool
-llm = ChatOpenAI(model="gpt-4o")
 llm_with_tools = llm.bind_tools([multiply])
 
 # Node
