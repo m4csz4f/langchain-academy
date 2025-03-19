@@ -8,11 +8,32 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_community.document_loaders import WikipediaLoader
 from langchain_community.tools import TavilySearchResults
 
-from langchain_openai import ChatOpenAI
-
 from langgraph.graph import StateGraph, START, END
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0) 
+import os
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from langchain_openai import AzureChatOpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+credential = DefaultAzureCredential()
+scope = "https://cognitiveservices.azure.com/.default"
+token_provider = get_bearer_token_provider(credential, scope)
+
+llm = AzureChatOpenAI(
+    azure_endpoint=os.getenv("AZURE_ENDPOINT"),
+    azure_deployment=os.getenv("AZURE_DEPLOYMENT"),
+    api_version=os.getenv("API_VERSION"),
+    azure_ad_token_provider=token_provider,
+    openai_api_type=os.getenv("OPENAI_API_TYPE"),
+    model=os.getenv("MODEL"),
+    temperature=0.0,
+    streaming=False,
+    callbacks=[],
+    verbose=False,
+    timeout=120,
+)
 
 class State(TypedDict):
     question: str
@@ -20,7 +41,7 @@ class State(TypedDict):
     context: Annotated[list, operator.add]
 
 def search_web(state):
-    
+
     """ Retrieve docs from web search """
 
     # Search
@@ -35,14 +56,14 @@ def search_web(state):
         ]
     )
 
-    return {"context": [formatted_search_docs]} 
+    return {"context": [formatted_search_docs]}
 
 def search_wikipedia(state):
-    
+
     """ Retrieve docs from wikipedia """
 
     # Search
-    search_docs = WikipediaLoader(query=state['question'], 
+    search_docs = WikipediaLoader(query=state['question'],
                                   load_max_docs=2).load()
 
      # Format
@@ -53,10 +74,10 @@ def search_wikipedia(state):
         ]
     )
 
-    return {"context": [formatted_search_docs]} 
+    return {"context": [formatted_search_docs]}
 
 def generate_answer(state):
-    
+
     """ Node to answer a question """
 
     # Get state
@@ -65,19 +86,19 @@ def generate_answer(state):
 
     # Template
     answer_template = """Answer the question {question} using this context: {context}"""
-    answer_instructions = answer_template.format(question=question, 
-                                                       context=context)    
-    
+    answer_instructions = answer_template.format(question=question,
+                                                       context=context)
+
     # Answer
     answer = llm.invoke([SystemMessage(content=answer_instructions)]+[HumanMessage(content=f"Answer the question.")])
-      
+
     # Append it to state
     return {"answer": answer}
 
 # Add nodes
 builder = StateGraph(State)
 
-# Initialize each node with node_secret 
+# Initialize each node with node_secret
 builder.add_node("search_web",search_web)
 builder.add_node("search_wikipedia", search_wikipedia)
 builder.add_node("generate_answer", generate_answer)

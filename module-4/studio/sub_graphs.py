@@ -70,6 +70,7 @@ def send_to_slack(state):
 qs_builder = StateGraph(input=QuestionSummarizationState,output=QuestionSummarizationOutputState)
 qs_builder.add_node("generate_summary", generate_summary)
 qs_builder.add_node("send_to_slack", send_to_slack)
+# Flow
 qs_builder.add_edge(START, "generate_summary")
 qs_builder.add_edge("generate_summary", "send_to_slack")
 qs_builder.add_edge("send_to_slack", END)
@@ -85,7 +86,7 @@ class EntryGraphState(TypedDict):
 def clean_logs(state):
     # Get logs
     raw_logs = state["raw_logs"]
-    # Data cleaning raw_logs -> docs 
+    # Data cleaning raw_logs -> docs
     cleaned_logs = raw_logs
     return {"cleaned_logs": cleaned_logs}
 

@@ -1,9 +1,31 @@
 from langchain_core.messages import SystemMessage
-from langchain_openai import ChatOpenAI
 
 from langgraph.graph import START, StateGraph, MessagesState
 from langgraph.prebuilt import tools_condition, ToolNode
+import os
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from langchain_openai import AzureChatOpenAI
+from dotenv import load_dotenv
 
+load_dotenv()
+
+credential = DefaultAzureCredential()
+scope = "https://cognitiveservices.azure.com/.default"
+token_provider = get_bearer_token_provider(credential, scope)
+
+llm = AzureChatOpenAI(
+    azure_endpoint=os.getenv("AZURE_ENDPOINT"),
+    azure_deployment=os.getenv("AZURE_DEPLOYMENT"),
+    api_version=os.getenv("API_VERSION"),
+    azure_ad_token_provider=token_provider,
+    openai_api_type=os.getenv("OPENAI_API_TYPE"),
+    model=os.getenv("MODEL"),
+    temperature=0.0,
+    streaming=False,
+    callbacks=[],
+    verbose=False,
+    timeout=120,
+)
 def add(a: int, b: int) -> int:
     """Adds a and b.
 
@@ -34,7 +56,6 @@ def divide(a: int, b: int) -> float:
 tools = [add, multiply, divide]
 
 # Define LLM with bound tools
-llm = ChatOpenAI(model="gpt-4o")
 llm_with_tools = llm.bind_tools(tools)
 
 # System message
